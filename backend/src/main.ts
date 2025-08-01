@@ -17,8 +17,8 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
+    res.status(200).json({
+        status: 'OK',
         timestamp: new Date().toISOString(),
         service: 'Solana NFT Marketplace Backend'
     });
@@ -180,6 +180,12 @@ app.get('/marketplace/', (req, res) => {
         ]
     });
 });
+
+app.get('/nft/collection', (req, res) => {
+    console.log('GET /nft/collection');
+    nftController.getNftCollection(req, res);
+});
+
 
 // Generic route for NFT base
 app.get('/nft/', (req, res) => {

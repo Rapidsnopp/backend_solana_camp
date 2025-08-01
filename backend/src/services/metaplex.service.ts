@@ -1,5 +1,14 @@
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+const payer = Keypair.fromSecretKey(
+    Uint8Array.from(JSON.parse(process.env.payer || '[]'))
+);
+
+const COLLECTION_MINT = process.env.COLLECTION_MINT ? new PublicKey(process.env.COLLECTION_MINT) : undefined;
+
 
 export class MetaplexService {
     private metaplex: Metaplex;
@@ -13,7 +22,7 @@ export class MetaplexService {
             .use(keypairIdentity(wallet));
     }
 
-    async mintNFT(metadata: { name: string; symbol: string; uri: string; sellerFeeBasisPoints: number; creators?: { address: string; share: number; }[] }) {
+    async mintNFT(metadata: { name: string; symbol: string; uri: string; sellerFeeBasisPoints: number; creators?: { address: string; share: number; }[]; collection?: string }) {
         const { nft } = await this.metaplex.nfts().create({
             uri: metadata.uri,
             name: metadata.name,
@@ -24,7 +33,15 @@ export class MetaplexService {
                 share: creator.share,
                 verified: false
             })),
+            collection: new PublicKey('A9NzU1MWwvDSiCTbxRu5beABWPDoPLJW184SaRbxmq7z')
         });
+
+        await this.metaplex.nfts().verifyCollection({
+            mintAddress: nft.address,
+            collectionMintAddress: new PublicKey('A9NzU1MWwvDSiCTbxRu5beABWPDoPLJW184SaRbxmq7z'),
+            collectionAuthority: payer,
+        });
+
         return nft;
     }
 
@@ -38,7 +55,7 @@ export class MetaplexService {
         return this.getNFT(tokenId);
     }
 
-    async mintNft(metadata: { name: string; symbol: string; uri: string; sellerFeeBasisPoints: number; creators?: { address: string; share: number; }[] }) {
+    async mintNft(metadata: { name: string; symbol: string; uri: string; sellerFeeBasisPoints: number; creators?: { address: string; share: number; }[], collection?: string }) {
         // Alias for mintNFT to match controller expectations
         return this.mintNFT(metadata);
     }
@@ -46,7 +63,7 @@ export class MetaplexService {
     async updateNFT(tokenId: string, metadata: { name?: string; uri?: string; sellerFeeBasisPoints?: number; }) {
         const mintAddress = new PublicKey(tokenId);
         const nft = await this.metaplex.nfts().findByMint({ mintAddress });
-        
+
         const updatedNft = await this.metaplex.nfts().update({
             nftOrSft: nft,
             name: metadata.name,
@@ -59,7 +76,7 @@ export class MetaplexService {
     async deleteNFT(tokenId: string) {
         const mintAddress = new PublicKey(tokenId);
         const nft = await this.metaplex.nfts().findByMint({ mintAddress });
-        
+
         // Note: NFT deletion might not be available in all Metaplex versions
         // This is a placeholder that returns the NFT info
         return {
@@ -69,4 +86,31 @@ export class MetaplexService {
             tokenId
         };
     }
+
+    // collectionMint là PublicKey của collection bạn muốn tìm
+    async getMetadataAccountsByCollection() {
+        const connection = this.connection;
+        const collectionMint = new PublicKey('A9NzU1MWwvDSiCTbxRu5beABWPDoPLJW184SaRbxmq7z');
+        // Filter theo field collection mint trong metadata account
+        const accounts = await connection.getProgramAccounts(
+            new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
+            {
+                filters: [
+                    {
+                        memcmp: {
+                            offset: 326,
+                            bytes: 'A9NzU1MWwvDSiCTbxRu5beABWPDoPLJW184SaRbxmq7z',
+                        },
+                    },
+                    {
+                        dataSize: 679,
+                    },
+                ],
+            }
+        );
+
+        console.log(accounts)
+        return accounts;
+    }
+
 }
