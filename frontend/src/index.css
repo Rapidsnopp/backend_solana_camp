@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-300;
+  }
+  
+  .card {
+    @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all duration-300;
+  }
+  
+  .input-field {
+    @apply bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300;
+  }
+  
+  .nft-card {
+    @apply bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-xl overflow-hidden hover:bg-gray-800/50 hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 transform hover:scale-105;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-500 to-emerald-400 bg-clip-text text-transparent;
+  }
+  
+  .glass-effect {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(153, 69, 255, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(153, 69, 255, 0.6);
+  }
+}
+
+/* Wallet adapter styles */
+.wallet-adapter-button {
+  background: linear-gradient(135deg, #9333ea 0%, #a855f7 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 8px 24px !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  transform: scale(1) !important;
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.4) !important;
+}
+
+.wallet-adapter-button:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.6) !important;
+}
+
+.wallet-adapter-button-trigger {
+  background: linear-gradient(135deg, #9333ea 0%, #a855f7 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 8px 24px !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  backdrop-filter: blur(8px) !important;
+}
+
+.wallet-adapter-modal {
+  background-color: rgb(31 41 55) !important;
+  border: 1px solid rgb(55 65 81) !important;
+}
+
+/* Loading spinner */
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #9945ff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: rgb(31 41 55);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgb(75 85 99);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(107 114 128);
+}

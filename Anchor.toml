@@ -1,0 +1,16 @@
+[programs.marketplace]
+name = "solana-nft-marketplace"
+version = "0.1.0"
+description = "A marketplace for NFTs on Solana using Metaplex"
+
+[build]
+program = "programs/marketplace/src/lib.rs"
+
+[features]
+default = []
+dev = []
+
+[dependencies]
+anchor-lang = "0.26.0"
+solana-program = "1.10.32"
+metaplex = { git = "https://github.com/metaplex-foundation/metaplex.git", branch = "main" }
