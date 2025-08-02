@@ -1,5 +1,10 @@
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
+import {
+    PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
+
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -88,29 +93,50 @@ export class MetaplexService {
     }
 
     // collectionMint là PublicKey của collection bạn muốn tìm
-    async getMetadataAccountsByCollection() {
-        const connection = this.connection;
+    async getMetadataAccountsByCollectionSafe() {
         const collectionMint = new PublicKey('A9NzU1MWwvDSiCTbxRu5beABWPDoPLJW184SaRbxmq7z');
-        // Filter theo field collection mint trong metadata account
-        const accounts = await connection.getProgramAccounts(
-            new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
+
+        // Offset của collection.key trong Metadata account (cần kiểm tra chính xác)
+        // Thường là 326 hoặc 348, bạn thử với 326 trước nhé
+        const COLLECTION_KEY_OFFSET = 326;
+
+        // Filter theo collection mint
+        const accounts = await this.connection.getProgramAccounts(
+            TOKEN_METADATA_PROGRAM_ID,
             {
                 filters: [
                     {
                         memcmp: {
-                            offset: 326,
-                            bytes: 'A9NzU1MWwvDSiCTbxRu5beABWPDoPLJW184SaRbxmq7z',
-                        },
+                            offset: COLLECTION_KEY_OFFSET,
+                            bytes: collectionMint.toBase58(),
+                        }
                     },
                     {
-                        dataSize: 679,
-                    },
-                ],
+                        dataSize: 679, // size metadata account, chỉnh theo thực tế nếu khác
+                    }
+                ]
             }
         );
 
-        console.log(accounts)
-        return accounts;
+        const matched = [];
+
+        for (const acc of accounts) {
+            try {
+                const [metadata] = Metadata.deserialize(acc.account.data);
+                if (metadata.collection && metadata.collection.verified) {
+                    matched.push({
+                        pubkey: acc.pubkey,
+                        lamports: acc.account.lamports,
+                        owner: acc.account.owner,
+                        metadata,
+                    });
+                }
+            } catch {
+                // skip parse errors
+            }
+        }
+
+        return matched;
     }
 
 }

@@ -47,6 +47,8 @@ export class NftController {
             // In a real implementation, you would upload to IPFS or similar
             console.log('📤 Image upload request received');
             console.log('📤 Request body:', req.body);
+            console.log('📤 Request files:', req.files)
+                ;
             const imageFile = req.files
             let imageUrl = 'https://via.placeholder.com/400x400/9945FF/FFFFFF?text=New+NFT';
 
@@ -136,37 +138,41 @@ export class NftController {
             // Default mock NFT data
             const defaultMockNfts = [
                 {
-                    id: 'default-1',
-                    name: 'Sample NFT #1',
-                    description: 'This is a sample NFT for testing',
-                    image: 'https://i.pinimg.com/236x/86/6e/52/866e52afc7a8f0788abad3e12080c761.jpg',
-                    price: 0.5,
-                    seller: walletAddress,
-                    isListed: false,
-                    attributes: [
-                        { trait_type: 'Background', value: 'Purple' },
-                        { trait_type: 'Rarity', value: 'Common' }
-                    ],
-                    collection: 'Test Collection',
-                    creator: walletAddress,
-                    royalty: 5,
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: 'default-2',
-                    name: 'Sample NFT #2',
-                    description: 'Another test NFT',
-                    image: 'https://via.placeholder.com/400x400/00D4AA/FFFFFF?text=NFT+2',
-                    price: 1.2,
+                    id: 'cyber-dragon-001',
+                    name: 'Cyber Dragon',
+                    description: 'An ancient dragon resurrected with cybernetic implants and glowing neon flames. It guards the digital skies.',
+                    image: 'https://media.tenor.com/n4OArq-u8W8AAAAe/cyber-dragon-yugioh.png',
+                    price: 1.1,
                     seller: walletAddress,
                     isListed: true,
                     attributes: [
-                        { trait_type: 'Background', value: 'Green' },
+                        { trait_type: 'Species', value: 'Dragon' },
+                        { trait_type: 'Core', value: 'Cybernetic' },
+                        { trait_type: 'Element', value: 'Electric Fire' },
+                        { trait_type: 'Rarity', value: 'Legendary' }
+                    ],
+                    collection: 'NeoBeasts',
+                    creator: walletAddress,
+                    royalty: 10,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'iron-paladin-002',
+                    name: 'Iron Paladin',
+                    description: 'A medieval warrior clad in full plate armor, sworn to defend the realm with honor and strength.',
+                    image: 'https://i.pinimg.com/474x/96/3a/cc/963acc616a9d58d3539d83575dfa6cbc.jpg',
+                    price: 0.75,
+                    seller: walletAddress,
+                    isListed: false,
+                    attributes: [
+                        { trait_type: 'Class', value: 'Paladin' },
+                        { trait_type: 'Weapon', value: 'Greatsword' },
+                        { trait_type: 'Armor', value: 'Steel Plate' },
                         { trait_type: 'Rarity', value: 'Rare' }
                     ],
-                    collection: 'Test Collection',
+                    collection: 'Legends of the Realm',
                     creator: walletAddress,
-                    royalty: 5,
+                    royalty: 8,
                     createdAt: new Date().toISOString()
                 }
             ];
@@ -200,29 +206,70 @@ export class NftController {
 
     public async getNftCollection(req: Request, res: Response): Promise<void> {
         try {
-            const accounts = await this.metaplexService.getMetadataAccountsByCollection();
+            const accounts = await this.metaplexService.getMetadataAccountsByCollectionSafe();
 
-            const parsedAccounts = accounts.map((acc) => {
-                const [metadata] = Metadata.deserialize(acc.account.data);
-                return {
-                    pubkey: acc.pubkey.toBase58(),
-                    lamports: acc.account.lamports,
-                    owner: acc.account.owner.toBase58(),
-                    name: metadata.data.name.replace(/\0/g, ''),
-                    symbol: metadata.data.symbol.replace(/\0/g, ''),
-                    uri: metadata.data.uri.replace(/\0/g, ''),
-                    collection: metadata.collection?.key.toBase58() || null,
-                    verified: metadata.collection?.verified || false
-                };
-            });
+            const parsedAccounts = await Promise.all(
+                accounts.map(async (acc) => {
+                    try {
+                        const metadata = acc.metadata; // Đã giải mã sẵn
+
+                        const name = metadata.data.name.replace(/\0/g, '');
+                        const symbol = metadata.data.symbol.replace(/\0/g, '');
+                        const uri = metadata.data.uri.replace(/\0/g, '');
+                        const collectionKey = metadata.collection?.key?.toBase58() || null;
+                        const verified = metadata.collection?.verified ?? false;
+
+                        // Optional: fetch off-chain metadata
+                        let jsonMetadata: any = {};
+                        try {
+                            const response = await fetch(uri);
+                            if (response.ok) {
+                                jsonMetadata = await response.json();
+                            }
+                        } catch {
+                            console.warn(`⚠️ Failed to fetch JSON metadata from URI: ${uri}`);
+                        }
+
+                        return {
+                            pubkey: acc.pubkey.toBase58(),
+                            // lamports: acc.lamports ?? null, // chỉ nếu bạn trả về trong service
+                            // owner: acc.owner?.toBase58() ?? null,
+                            name: jsonMetadata.name || name,
+                            symbol,
+                            uri,
+                            image: jsonMetadata.image || null,
+                            description: jsonMetadata.description || '',
+                            collection: collectionKey,
+                            verified,
+                            attributes: jsonMetadata.attributes || [],
+                            sellerFeeBasisPoints: metadata.data.sellerFeeBasisPoints
+                        };
+                    } catch (err) {
+                        console.warn(`❌ Failed to parse metadata for account ${acc.pubkey.toBase58()}:`, err);
+                        return null;
+                    }
+                })
+            );
+
+            const filteredAccounts = parsedAccounts.filter(
+                (item): item is Exclude<typeof item, null> => item !== null
+            );
 
             res.status(200).json({
-                total: parsedAccounts.length,
-                accounts: parsedAccounts
+                total: filteredAccounts.length,
+                accounts: filteredAccounts
             });
+
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            res.status(500).json({ message: 'Error fetching NFT collection', error: errorMessage });
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error('❌ Error in getNftCollection:', errorMessage);
+
+            res.status(500).json({
+                message: 'Error fetching NFT collection',
+                error: errorMessage
+            });
         }
     }
+
+
 }

@@ -30,7 +30,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     const newValues = currentValues.includes(value)
       ? currentValues.filter(v => v !== value)
       : [...currentValues, value];
-    
+
     updateFilters({
       attributes: {
         ...filters.attributes,
@@ -61,27 +61,31 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       </div>
 
       {/* Price Range */}
-      <div className="card">
+      <div className="card p-4 rounded-xl shadow-md">
         <h4 className="font-medium mb-3">Price Range (SOL)</h4>
         <div className="space-y-3">
-          <div className="flex space-x-2">
+          <div className="flex gap-2">
             <input
               type="number"
               placeholder="Min"
               value={filters.priceRange[0]}
-              onChange={(e) => updateFilters({
-                priceRange: [Number(e.target.value) || 0, filters.priceRange[1]]
-              })}
-              className="input-field flex-1"
+              onChange={(e) =>
+                updateFilters({
+                  priceRange: [Number(e.target.value) || 0, filters.priceRange[1]],
+                })
+              }
+              className="input-field w-full px-3 py-2 border rounded-lg"
             />
             <input
               type="number"
               placeholder="Max"
               value={filters.priceRange[1]}
-              onChange={(e) => updateFilters({
-                priceRange: [filters.priceRange[0], Number(e.target.value) || 1000]
-              })}
-              className="input-field flex-1"
+              onChange={(e) =>
+                updateFilters({
+                  priceRange: [filters.priceRange[0], Number(e.target.value) || 1000],
+                })
+              }
+              className="input-field w-full px-3 py-2 border rounded-lg"
             />
           </div>
           <input
@@ -89,13 +93,16 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             min="0"
             max="1000"
             value={filters.priceRange[1]}
-            onChange={(e) => updateFilters({
-              priceRange: [filters.priceRange[0], Number(e.target.value)]
-            })}
+            onChange={(e) =>
+              updateFilters({
+                priceRange: [filters.priceRange[0], Number(e.target.value)],
+              })
+            }
             className="w-full accent-solana-purple"
           />
         </div>
       </div>
+
 
       {/* Collections */}
       {collections.length > 0 && (

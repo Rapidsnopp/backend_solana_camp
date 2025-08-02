@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { SolanaService } from '../services/solana.service';
 import { MetaplexService } from '../services/metaplex.service';
+import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
+
 
 export class MarketplaceController {
     private solanaService: SolanaService;
@@ -18,7 +20,7 @@ export class MarketplaceController {
         try {
             const { nftAddress, price, walletAddress } = req.body;
             console.log('📝 Create listing request:', { nftAddress, price, walletAddress });
-            
+
             if (!nftAddress || !price || !walletAddress) {
                 res.status(400).json({
                     success: false,
@@ -26,7 +28,7 @@ export class MarketplaceController {
                 });
                 return;
             }
-            
+
             // Mock response for now
             const mockResponse = {
                 success: true,
@@ -37,7 +39,7 @@ export class MarketplaceController {
                 message: 'NFT listed successfully (mock)',
                 transactionId: `${Math.random().toString(36).substring(2, 15)}`
             };
-            
+
             console.log('✅ Listing created:', mockResponse);
             res.status(201).json(mockResponse);
         } catch (error) {
@@ -61,7 +63,7 @@ export class MarketplaceController {
         try {
             const { listingId } = req.params;
             console.log('🚫 Cancel listing request for:', listingId);
-            
+
             // Mock response for now
             const mockResponse = {
                 success: true,
@@ -69,7 +71,7 @@ export class MarketplaceController {
                 message: 'Listing cancelled successfully (mock)',
                 transactionId: `${Math.random().toString(36).substring(2, 15)}`
             };
-            
+
             res.status(200).json(mockResponse);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -79,15 +81,51 @@ export class MarketplaceController {
 
     public async getListings(req: Request, res: Response): Promise<void> {
         try {
-            console.log('🏪 Get marketplace listings request');
-            
+            console.log('Get marketplace listings request');
+            const rawAccounts = await this.metaplexService.getMetadataAccountsByCollectionSafe();
+            // Parse metadata từ accounts on-chain
+            const realListings = await Promise.all(
+                rawAccounts.map(async ({ pubkey, metadata }, index) => {
+                    try {
+                        const uri = metadata.data.uri.replace(/\0/g, '');
+                        const name = metadata.data.name.replace(/\0/g, '');
+                        const symbol = metadata.data.symbol.replace(/\0/g, '');
+                        const collection = metadata.collection?.key?.toBase58() || null;
+                        const verified = metadata.collection?.verified ?? false;
+
+                        const metaJson = await fetch(uri).then((res) => res.json());
+
+                        return {
+                            id: (index + 1).toString(),
+                            name: metaJson.name || name,
+                            description: metaJson.description || '',
+                            image: metaJson.image || '',
+                            price: parseFloat((Math.random() * 2 + 0.5).toFixed(2)),
+                            seller: 'MockSeller', // Bạn cần truyền đúng owner nếu có
+                            isListed: true,
+                            attributes: metaJson.attributes || [],
+                            collection: collection || 'Unknown',
+                            creator:
+                                metadata.data.creators?.[0]?.address?.toBase58() || 'Unknown',
+                            royalty: metadata.data.sellerFeeBasisPoints / 100 || 0,
+                        };
+                    } catch (err) {
+                        console.warn(`❌ Failed to parse metadata for ${pubkey.toBase58()}`, err);
+                        return null;
+                    }
+                })
+            );
+
+
+            const filteredListings = realListings.filter(Boolean); // loại null
+
             // Mock marketplace listings
             const mockListings = [
                 {
                     id: '1',
                     name: 'Cosmic Cat #001',
                     description: 'A rare cosmic cat NFT with stellar powers',
-                    image: 'https://via.placeholder.com/400x400/9945FF/FFFFFF?text=Cosmic+Cat',
+                    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGVNqbBStAXsk1rFU_5PDgIGKH3zRoF0b2tw&s',
                     price: 2.5,
                     seller: 'A9E6YZGpNxr2pPuu7BrhprGsnM2F6YpJhdA4YsiuHUbs',
                     isListed: true,
@@ -104,7 +142,7 @@ export class MarketplaceController {
                     id: '2',
                     name: 'Digital Dreamscape',
                     description: 'An abstract digital art piece exploring virtual reality',
-                    image: 'https://via.placeholder.com/400x400/00D4AA/FFFFFF?text=Digital+Art',
+                    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv7eNgJpVlzHFA3I3l6_jK1idRAOoGv8Wd7Q&s',
                     price: 1.8,
                     seller: 'B8F7XZHpOyr3qQvv8CsiprGtnN3G7ZqKieB5ZtjvIVct',
                     isListed: true,
@@ -121,7 +159,7 @@ export class MarketplaceController {
                     id: '3',
                     name: 'Solana Sunset',
                     description: 'Beautiful sunset over the Solana blockchain',
-                    image: 'https://via.placeholder.com/400x400/FF6B35/FFFFFF?text=Sunset',
+                    image: 'https://pbs.twimg.com/media/Gwp06WAWsAAtsTF.png',
                     price: 0.75,
                     seller: 'C9G8YZIpPzs4rRww9DtjqsHtoO4H8arLjfC6AukwJWdu',
                     isListed: true,
@@ -133,9 +171,10 @@ export class MarketplaceController {
                     collection: 'Nature Scenes',
                     creator: 'C9G8YZIpPzs4rRww9DtjqsHtoO4H8arLjfC6AukwJWdu',
                     royalty: 3
-                }
+                },
+                ...filteredListings
             ];
-            
+            console.log('📦 Marketplace listings:', mockListings);
             res.status(200).json({ data: mockListings });
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -147,7 +186,7 @@ export class MarketplaceController {
         try {
             const { walletAddress } = req.params;
             console.log('👤 Get user listings request for:', walletAddress);
-            
+
             // Mock user listings
             const mockUserListings = [
                 {
@@ -174,7 +213,7 @@ export class MarketplaceController {
                     isActive: true
                 }
             ];
-            
+
             res.status(200).json({ data: mockUserListings });
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
