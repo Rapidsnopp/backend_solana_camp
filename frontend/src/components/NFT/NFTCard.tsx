@@ -44,7 +44,7 @@ export const NFTCard: React.FC<NFTCardProps> = ({
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'https://via.placeholder.com/400x400/374151/FFFFFF?text=NFT+Image'; // Better fallback
+              target.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2WYEpNBeEEKm8F2BULZrGq4IMMAAGGcvDng&s'; // Better fallback
             }}
           />
           {nft.isListed && (
